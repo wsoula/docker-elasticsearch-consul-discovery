@@ -1,0 +1,10 @@
+{
+  "ID":"svc-@hostname@",
+  "Name":"svc-elasticsearch",
+  "Address":"@ip@",
+  "Port":9300,
+  "Check":{
+    "HTTP":"http://@hostname@:9200/_cat",
+    "Interval":"5s"
+  }
+}

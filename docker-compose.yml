@@ -1,0 +1,121 @@
+version: "3"
+services:
+  consul1:
+    image: consul
+    container_name: consul1
+    #hostname: consul1
+    ports:
+      - "8400:8400"
+      - "8500:8500"
+      - "8600:53"
+    command: "agent -server -bootstrap-expect 3 -ui -client 0.0.0.0"
+  consul2:
+    image: consul
+    container_name: consul2
+    #hostname: consul2
+    #expose:
+    #  - "8400"
+    #  - "8500"
+    #  - "8600"
+    command: "agent -server -retry-join consul1 -client 0.0.0.0"
+    depends_on:
+      - consul1
+  consul3:
+    image: consul
+    container_name: consul3
+    #hostname: consul3
+    #expose:
+    #  - "8400"
+    #  - "8500"
+    #  - "8600"
+    command: "agent -server -retry-join consul1 -client 0.0.0.0"
+    depends_on:
+      - consul1
+  elasticsearch1:
+    image: wsoula-elasticsearch-consul
+    container_name: elasticsearch1
+    hostname: elasticsearch1
+    environment:
+      - cluster.name=docker-cluster-wsoula
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.zen.hosts_provider=consul
+      - discovery.consul.service-names=svc-elasticsearch
+      - discovery.consul.local-ws-host=http://consul1
+      #- discovery.consul.healthy=false
+      - discovery.zen.minimum_master_nodes=2
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    depends_on:
+      - consul1
+      - consul2
+      - consul3
+  elasticsearch2:
+    image: wsoula-elasticsearch-consul
+    container_name: elasticsearch2
+    hostname: elasticsearch2
+    environment:
+      - cluster.name=docker-cluster-wsoula
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      #- discovery.type=consul
+      - discovery.zen.hosts_provider=consul
+      - discovery.consul.service-names=svc-elasticsearch
+      - discovery.consul.local-ws-host=http://consul1
+      #- discovery.consul.healthy=false
+      #- "discovery.zen.ping.unicast.hosts=elasticsearch1,elasticsearch3"
+      - discovery.zen.minimum_master_nodes=2
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata2:/usr/share/elasticsearch/data
+    expose:
+      - "9200"
+      - "9300"
+    depends_on:
+      - elasticsearch1
+  elasticsearch3:
+    image: wsoula-elasticsearch-consul
+    container_name: elasticsearch3
+    hostname: elasticsearch3
+    environment:
+      - cluster.name=docker-cluster-wsoula
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      #- discovery.type=consul
+      - discovery.zen.hosts_provider=consul
+      - discovery.consul.service-names=svc-elasticsearch
+      - discovery.consul.local-ws-host=http://consul1
+      #- discovery.consul.healthy=false
+      #- "discovery.zen.ping.unicast.hosts=elasticsearch2,elasticsearch1"
+      - discovery.zen.minimum_master_nodes=2
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata3:/usr/share/elasticsearch/data
+    expose:
+      - "9200"
+      - "9300"
+    depends_on:
+      - elasticsearch2
+volumes:
+  esdata1:
+    driver: local
+  esdata2:
+    driver: local
+  esdata3:
+    driver: local
